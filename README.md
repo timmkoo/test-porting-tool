@@ -4,7 +4,7 @@
 
 #### Required programs :
 
--Python 3.x.x
+-Python 3.12.x (for Windows users, install Python from the Microsoft Store)
 
 #### How to use it:
 
