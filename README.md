@@ -2,9 +2,17 @@
 
 #### T-ROM Project
 
-Required programs :
+#### Required programs :
 
 -Python 3.x.x
+
+#### How to use it:
+
+1.Download the repository
+
+2.Start Run.bat (on Windows) or Run.sh (on Linux)
+
+3.
 
 
 
