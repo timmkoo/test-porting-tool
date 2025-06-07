@@ -17,7 +17,7 @@ from .utils import portutils
 class FileChooser(Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
-        self.title("请选择底包的boot, system和要移植的zip卡刷包")
+        self.title("Please select the base package's boot, system, and the zip port package")
 
         self.portzip = StringVar()
         self.basesys = StringVar()
@@ -38,11 +38,11 @@ class FileChooser(Toplevel):
         def __match(val) -> str:
             match val:
                 case 0:
-                    return "移植包路径"
+                    return "Port package path"
                 case 1:
-                    return "此设备boot镜像"
+                    return "Boot image of this device"
                 case 2:
-                    return "此设备system镜像"
+                    return "System image of this device"
                 case _:
                     return ""
 
@@ -54,7 +54,7 @@ class FileChooser(Toplevel):
             frame = ttk.Frame(self)
             label = ttk.Label(frame, text=__match(index), width=16)
             entry = ttk.Entry(frame, textvariable=current, width=40)
-            button = ttk.Button(frame, text="选择文件", command=lambda x=current: __choose_file(x))
+            button = ttk.Button(frame, text="Choose File", command=lambda x=current: __choose_file(x))
             self.frame.append([frame, label, entry, button])
         for i in self.frame:
             for index, widget in enumerate(i):
@@ -66,13 +66,13 @@ class FileChooser(Toplevel):
                     continue
                 widget.pack(side='left', padx=5, pady=5)
         bottomframe = ttk.Frame(self)
-        bottombutton = ttk.Button(bottomframe, text='确定', command=self.destroy)
+        bottombutton = ttk.Button(bottomframe, text='OK', command=self.destroy)
         bottombutton.pack(side='right', padx=5, pady=5)
         bottomframe.pack(side='bottom', fill='x', padx=5, pady=5)
 
     def get(self) -> list:
         """
-        return boot.img, system.img, portzip.zip path
+        Return [boot.img path, system.img path, portzip.zip path]
         """
         self.wait_window(self)
         return [
@@ -96,11 +96,11 @@ class StdoutRedirector:
 
 class MyUI(ttk.Labelframe):
     def __init__(self, parent):
-        super().__init__(parent, text="MTK 低端机移植工具")
+        super().__init__(parent, text="MTK Low-End Device Porting Tool")
         self.chipset_select = StringVar(value='mt65')
         self.pack_type = StringVar(value='zip')
         self.item = []
-        self.itembox = []  # save Checkbutton
+        self.itembox = []  # save Checkbutton widgets
 
         self.patch_magisk = BooleanVar(value=False)
         self.target_arch = StringVar(value='arm64')
@@ -108,29 +108,29 @@ class MyUI(ttk.Labelframe):
         self.__setup_widgets()
 
     def __start_port(self):
-        # item check not 0
-        if self.item.__len__() == 0:
-            print("Error: 移植条目为0，请先加载移植条目！")
+        # Check that at least one port item is selected
+        if len(self.item) == 0:
+            print("Error: No port items selected, please load port items first!")
             return
         files = boot, system, portzip = FileChooser(self).get()
-        for i in boot, system, portzip:
+        for i in (boot, system, portzip):
             if not Path(i).exists() or i == '':
-                print(f"文件{i}未选择或不存在")
+                print(f"File {i} not selected or does not exist")
                 return
-        print(f"底包boot路径为：{boot}\n"
-              f"底包system镜像路径为：{system}\n"
-              f"移植包路径为：{portzip}")
-        # config items
+        print(f"Base package boot path is: {boot}\n"
+              f"Base package system image path is: {system}\n"
+              f"Port package path is: {portzip}")
+        # Configure selected items
         newdict = support_chipset_portstep[self.chipset_select.get()]
         for key, tkbool in self.item:
             newdict[key] = tkbool.get()
 
-        # magisk stuff
+        # Magisk configuration
         newdict['patch_magisk'] = self.patch_magisk.get()
         newdict['magisk_apk'] = self.magisk_apk.get()
         newdict['target_arch'] = self.target_arch.get()
 
-        # start to port
+        # Start porting
         p = portutils(
             newdict, *files, True if self.pack_type.get() == 'img' else False,
         ).start
@@ -151,39 +151,44 @@ class MyUI(ttk.Labelframe):
             actcanvas.update()
 
         def __load_port_item(select):
-
-            # select = self.chipset_select.get()
-            print(f"选中移植方案为{select}...")
-            item = support_chipset_portstep[select]['flags']
-            # Destory last items
+            print(f"Selected port scheme is {select}...")
+            flags = support_chipset_portstep[select]['flags']
+            # Destroy last items
             self.item = []
             self.itembox = []
-            if self.actcvframe:
+            if hasattr(self, 'actcvframe'):
                 self.actcvframe.destroy()
             __create_cv_frame()
 
-            for index, current in enumerate(item):
-                self.item.append([current, BooleanVar(value=item[current])])  # flagname, flag[True, False]
-                self.itembox.append(ttk.Checkbutton(self.actcvframe, text=current, variable=self.item[index][1]))
+            for index, current in enumerate(flags):
+                self.item.append([current, BooleanVar(value=flags[current])])  # [flag_name, BooleanVar]
+                self.itembox.append(
+                    ttk.Checkbutton(self.actcvframe, text=current, variable=self.item[index][1])
+                )
 
             for i in self.itembox:
                 i.pack(side='top', fill='x', padx=5)
 
-        # label of support devices
+        # Frame for chipset selection
         optframe = ttk.Frame(self)
         optlabel = ttk.Label(optframe)
 
-        opttext = ttk.Label(optlabel, text="芯片类型", anchor='e')
-        optmenu = ttk.OptionMenu(optlabel, self.chipset_select, support_chipset[0], *support_chipset,
-                                 command=__load_port_item)
+        opttext = ttk.Label(optlabel, text="Chipset Type", anchor='e')
+        optmenu = ttk.OptionMenu(
+            optlabel,
+            self.chipset_select,
+            support_chipset[0],
+            *support_chipset,
+            command=__load_port_item
+        )
 
         opttext.pack(side='left', padx=5, pady=5, expand=False)
         optmenu.pack(side='left', fill='x', padx=5, pady=5, expand=False)
 
         optlabel.pack(side='top', fill='x')
 
-        # Frame of support action
-        actframe = ttk.Labelframe(optframe, text="支持的移植条目", height=180)
+        # Frame for supported port items
+        actframe = ttk.Labelframe(optframe, text="Supported Port Items", height=180)
 
         actcanvas = Canvas(actframe)
         actscroll = ttk.Scrollbar(actframe, orient='vertical', command=actcanvas.yview)
@@ -198,40 +203,64 @@ class MyUI(ttk.Labelframe):
         actframe.pack(side='top', fill='x', expand=True)
         __create_cv_frame()
 
-        # label of buttons
+        # Buttons and options
         buttonlabel = ttk.Label(optframe)
-        buttonport = ttk.Button(optframe, text="一键移植", command=self.__start_port)
+        buttonport = ttk.Button(optframe, text="One-Click Port", command=self.__start_port)
         buttonport.pack(side='top', fill='both', padx=5, pady=5, expand=True)
-        buttoncheck1 = ttk.Checkbutton(buttonlabel, text="输出为zip卡刷包", variable=self.pack_type, onvalue='zip',
-                                       offvalue='img')
-        buttoncheck2 = ttk.Checkbutton(buttonlabel, text="输出为img镜像", variable=self.pack_type, onvalue='img',
-                                       offvalue='zip')
+
+        buttoncheck1 = ttk.Checkbutton(
+            buttonlabel,
+            text="Output as zip flashable package",
+            variable=self.pack_type,
+            onvalue='zip',
+            offvalue='img'
+        )
+        buttoncheck2 = ttk.Checkbutton(
+            buttonlabel,
+            text="Output as img image",
+            variable=self.pack_type,
+            onvalue='img',
+            offvalue='zip'
+        )
 
         buttoncheck1.grid(column=0, row=0, padx=5, pady=5)
         buttoncheck2.grid(column=1, row=0, padx=5, pady=5)
 
-        magiskarch = ttk.OptionMenu(buttonlabel, self.target_arch, "arm64", *["arm64", "arm", "x86", "x86_64"])
+        magiskarch = ttk.OptionMenu(
+            buttonlabel,
+            self.target_arch,
+            "arm64",
+            *["arm64", "arm", "x86", "x86_64"]
+        )
 
         magiskapkentry = ttk.Entry(buttonlabel, textvariable=self.magisk_apk)
         magiskapkentry.bind("<Button-1>", lambda x: self.magisk_apk.set(askopenfilename()))
 
-        buttonmagisk = ttk.Checkbutton(buttonlabel, text="修补magisk", variable=self.patch_magisk, onvalue=True,
-                                       offvalue=False, command=lambda: (
+        buttonmagisk = ttk.Checkbutton(
+            buttonlabel,
+            text="Patch Magisk",
+            variable=self.patch_magisk,
+            onvalue=True,
+            offvalue=False,
+            command=lambda: (
                 magiskapkentry.grid_forget(),
                 magiskarch.grid_forget(),
-            ) if not self.patch_magisk.get() else (  # 你在点的时候是函数还是没变的，所以反着来
+            ) if not self.patch_magisk.get() else (
                 magiskapkentry.grid(column=0, row=3, padx=5, pady=5, sticky='nsew', columnspan=2),
                 magiskarch.grid(column=0, row=2, padx=5, pady=5, sticky='nsew', columnspan=2)
-            ))
+            )
+        )
         buttonmagisk.grid(column=0, row=1, padx=5, pady=5, sticky='w')
         buttonlabel.pack(side='top', padx=5, pady=5, fill='x', expand=True)
 
         optframe.pack(side='left', padx=5, pady=5, fill='y', expand=False)
-        # log label
-        logframe = ttk.Labelframe(self, text="日志输出")
+
+        # Log output
+        logframe = ttk.Labelframe(self, text="Log Output")
         self.log = scrolledtext.ScrolledText(logframe)
         sys.stderr = StdoutRedirector(self.log)
         sys.stdout = StdoutRedirector(self.log)
         self.log.pack(side='left', fill='both', anchor='center')
         logframe.pack(side='left', padx=5, pady=5, fill='both', expand=True)
+
         __load_port_item(self.chipset_select.get())
