@@ -64,7 +64,7 @@ def parseMagiskApk(apk: str, arch: ["arm64", "arm", "x86", "x86_64"] = "arm64", 
         with open(path, 'wb') as f:
             f.write(bytes)
 
-    print("- 开始解压需要的文件...", file=log)
+    print("- Start unzipping the required files...", file=log)
     arch = archconv(arch)
     os, p = retTypeAndMachine()
     pp = "x86_64"
@@ -118,7 +118,7 @@ class BootPatcher(object):
 
     def __check(self):
         if not isfile(self.magiskboot):
-            print("- magiskboot文件不存在，无法完成初始化", file=self.log)
+            print("- The magiskboot file does not exist and initialization cannot be completed", file=self.log)
             return False
 
     def __prepare_env(self):
@@ -163,11 +163,11 @@ class BootPatcher(object):
     def patch(self, bootimg: str) -> bool:
         # Check bootimg exist
         if not isfile(bootimg):
-            print("- boot 镜像不存在", file=self.log)
+            print("- The boot image does not exist", file=self.log)
             return False
 
         # Unpack bootimg
-        print("- 解包boot镜像...", file=self.log)
+        print("- Unpack the boot image...", file=self.log)
         err, ret = self.__execv(["unpack", bootimg])
         logging.info(ret)
 
@@ -175,17 +175,17 @@ class BootPatcher(object):
             case 0:
                 pass
             case 1:
-                print("! 不支持/未知 镜像格式", file=self.log)
+                print("! Unsupported/Unknown image format", file=self.log)
                 return False
             case 2:
-                print("- ChromeOS 格式boot镜像", file=self.log)
-                print("- 暂不支持")
+                print("- ChromeOS format boot image", file=self.log)
+                print("- Not supported yet")
                 return False
             case _:
-                print("! 无法解包此boot镜像", file=self.log)
+                print("! Unable to unpack the boot image", file=self.log)
                 return False
 
-        print("- 检查ramdisk状态", file=self.log)
+        print("- Check ramdisk status", file=self.log)
         if isfile("ramdisk.cpio"):
             err, ret = self.__execv(["cpio", "ramdisk.cpio", "test"])
             status = err
@@ -197,18 +197,18 @@ class BootPatcher(object):
         sha = ""
         match (status & 3):
             case 0:  # Stock boot
-                print("- 检测到原始未修改的boot镜像", file=self.log)
+                print("- Original unmodified boot image detected", file=self.log)
                 sha = getsha1(bootimg)
                 cp(bootimg, "stock_boot.img")
                 cp("ramdisk.cpio", "ramdisk.cpio.orig")
             case 1:  # Magisk patched
-                print("- 检测到经过magisk修补过的boot镜像", file=self.log)
+                print("- Detected a boot image patched by magisk", file=self.log)
                 err, ret = self.__execv(["cpio", "ramdisk.cpio", "extract .backup/.magisk config.orig", "restore"])
                 cp("ramdisk.cpio", "ramdisk.cpio.orig")
                 rm("stock_boot.img")
             case 2:  # Unsupported
-                print("- boot镜像被未知的程序修改过", file=self.log)
-                print("- 请先将其还原之原始的boot镜像", file=self.log)
+                print("- The boot image has been modified by an unknown program", file=self.log)
+                print("- Please restore it to the original boot image first", file=self.log)
                 return False
 
         # Sony device
@@ -220,7 +220,7 @@ class BootPatcher(object):
             sha = grep_prop("SHA1", "config.orig")
             rm("config.orig")
 
-        print("- 修补ramdisk", file=self.log)
+        print("- Patching ramdisk", file=self.log)
 
         skip32 = "#"
         skip64 = "#"
@@ -260,7 +260,7 @@ class BootPatcher(object):
             "add 000 .backup/.magisk config",
         ])
         if err != 0:
-            print("- 无法修补ramdisk", file=self.log)
+            print("- Unable to patch ramdisk", file=self.log)
             return False
 
         rm("ramdisk.cpio.orig", "config", "magisk32.xz", "magisk64.xz", "stub.xz")
@@ -272,13 +272,13 @@ class BootPatcher(object):
                 ])
                 if err != 0:
                     print(f"- Boot 镜像中的{dt}被旧的magisk修补过", file=self.log)
-                    print("- 请使用没有修改过的boot镜像再试一次", file=self.log)
+                    print("- Please try again with an unmodified boot image.", file=self.log)
                     return False
                 err, _ = self.__execv([
                     "dtb", dt, "patch"
                 ])
                 if err == 0:
-                    print(f"- 修补boot镜像中{dt}的fstab")
+                    print(f"- Patch fstab of {dt} in boot image")
 
         if isfile("kernel"):
             patchedkernel = False
@@ -301,16 +301,16 @@ class BootPatcher(object):
                 if err == 0: patchedkernel = True
             if not patchedkernel: rm("kernel")
 
-        print("- 打包boot镜像", file=self.log)
+        print("- Package boot image", file=self.log)
         err, _ = self.__execv([
             "repack", bootimg
         ])
         if err != 0:
-            print("- 打包boot镜像失败", file=self.log)
+            print("- Failed to pack the boot image", file=self.log)
             return False
 
         self.cleanup()
-        print("- 完成！", file=self.log)
+        print("- Finish!", file=self.log)
         return True
 
     def cleanup(self):
@@ -318,7 +318,7 @@ class BootPatcher(object):
             "magisk32", "magisk32.xz", "magisk64", "magisk64.xz", "magiskinit", "stub.apk"
         ]
         rm(*rmlist)
-        print("- 清理文件", file=self.log)
+        print("- clean files", file=self.log)
         self.__execv(["cleanup"])
 
 
