@@ -25,7 +25,12 @@ Make sure your porting rom zip you want to port has the kernel version 3.10.54 o
 7. Give your Paths to your devices system.img and boot.img
 
 8. When its finished porting , you found the generated images in /out of the tools directory
-9. Flash the generated images to your device over the android 5 system with **[SP Flashtool](https://spflashtools.com/windows/sp-flash-tool-v5-1924)** (Download Only )
+
+### Warning !!!
+You need to boot once complete in the android 5 system before flashing the generated Images (Important for later)
+### Warning !!!
+
+10. Flash the generated images to your device over the android 5 system with **[SP Flashtool](https://spflashtools.com/windows/sp-flash-tool-v5-1924)** (Download Only )
 
 #### On your Timmkoo after flashing the generated images :
  
